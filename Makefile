@@ -5,7 +5,7 @@ all:
 #	include
 	git clone https://github.com/joq62/include.git;
 	cp src/*.app ebin;
-	erlc -o ebin src/*.erl;
+	erlc -I include -o ebin src/*.erl;
 doc_gen:
 	rm -rf  node_config logfiles doc/*;
 	erlc ../doc_gen.erl;
