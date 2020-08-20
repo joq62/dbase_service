@@ -17,7 +17,7 @@
 %% --------------------------------------------------------------------
 %% Include files
 %% --------------------------------------------------------------------
-
+-include("infra.hrl").
 %% --------------------------------------------------------------------
 
 %% --------------------------------------------------------------------
@@ -25,12 +25,6 @@
 %% 
 %% --------------------------------------------------------------------
 -record(state,{}).
-
--record(service_discovery,
-	{ service_id,
-	  node
-	}).
-	  
 
 
 	  
@@ -44,7 +38,8 @@
 	 start_mnesia/1,
 	 create_table/0,
 	 insert/2,
-	 read/2
+	 read/2,
+	 read_table/1
 	]).
 
 %% server interface
@@ -95,10 +90,12 @@ create_schema(NodeList)->
 create_table()->
     gen_server:call(?MODULE,{create_table},infinity).
 
-insert(ServiceId,Node)->
-    gen_server:call(?MODULE,{insert,ServiceId,Node},infinity).
+insert(Table,Info)->
+    gen_server:call(?MODULE,{insert,Table,Info},infinity).
 read(Table,Key)->
     gen_server:call(?MODULE,{read,Table,Key},infinity).
+read_table(Table)->
+    gen_server:call(?MODULE,{read_table,Table},infinity).
 %%___________________________________________________________________
 
 
@@ -143,21 +140,39 @@ handle_call({create_schema,NodeList}, _From, State) ->
 
 
 handle_call({create_table}, _From, State) ->
-    Reply=mnesia:create_table(service_discovery,
-			      [{type,bag},
-			       {attributes,record_info(fields,service_discovery)}]),
+    mnesia:create_table(service_discovery,
+			[{type,bag},
+			 {attributes,record_info(fields,service_discovery)}]),
+    
+    mnesia:create_table(catalog,
+			      [{attributes,record_info(fields,catalog)}]),
+   
+    mnesia:create_table(nodes,
+			      [{attributes,record_info(fields,nodes)}]),
+
+    mnesia:create_table(deployment,
+			[{type,bag},
+			 {attributes,record_info(fields,deployment)}]),
+
+    mnesia:create_table(log,
+			[{type,bag},
+			 {attributes,record_info(fields,log)}]),
+    
+    Reply=ok,
     {reply, Reply, State};
 
 
-handle_call({insert,ServiceId,Node}, _From, State) ->
-    ServiceDiscovery=#service_discovery{service_id=ServiceId,
-					node=Node},
-    Fun=fun()->
-		mnesia:write(ServiceDiscovery)
-	end,
-
-    mnesia:transaction(Fun),
-    Reply=ok,
+handle_call({insert,Table,Info}, _From, State) ->
+    Reply=case rpc:call(node(),dbase_lib,create_item,[Table,Info]) of
+	      {badrpc,Err}->
+		  {error,[?MODULE,?LINE,Err,Table,Info]};
+	      InfoToStore->
+		  Fun=fun()->
+			      mnesia:write(InfoToStore)
+		      end,
+		  mnesia:transaction(Fun),
+		  ok
+	  end,
     {reply, Reply, State};
 
 handle_call({read,Table,Key}, _From, State) ->
@@ -167,6 +182,11 @@ handle_call({read,Table,Key}, _From, State) ->
 		R->
 		    R
 	    end,
+    {reply, Reply, State};
+
+handle_call({read_table,Table}, _From, State) ->
+    CatchAll = [{'_',[],['$_']}],
+    Reply=mnesia:dirty_select(Table, CatchAll),
     {reply, Reply, State};
 
 handle_call({stop_service,ServiceId}, _From, State) ->
