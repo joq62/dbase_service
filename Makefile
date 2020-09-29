@@ -11,12 +11,20 @@ doc_gen:
 	erlc ../doc_gen.erl;
 	erl -s doc_gen start -sname doc
 test:
-	rm -rf *@asus include configs *_service  erl_crasch.dump;
+	rm -rf  test_ebin/* ebin/* include configs *_service  erl_crasch.dump;
 #	include
-	git clone https://github.com/joq62/include.git;	
+#	git clone https://github.com/joq62/include.git;	
 	cp src/*.app ebin;
-	erlc -I include -o ebin src/*.erl;
+	erlc -o ebin src/*.erl;
 #	test
-	erlc -I include -o test_ebin test_src/*.erl;
-	erl -pa ebin -sname node1 -detached;
-	erl -pa ebin -pa test_ebin -s dbase_service_tests start -sname dbase_test
+	erlc -o test_ebin test_src/*.erl;
+#	erl -pa ebin -sname node1 -detached;
+	erl -pa ebin -pa test_ebin -s dbase_service_tests start -sname mnesia -setcookie abc
+node2:
+	erl -pa ebin -pa test_ebin -s dbase_service_tests start -sname backup_test -setcookie abc
+mnesia:
+	rm -rf  ebin/* test_ebin/* include configs *_service  erl_crasch.dump;
+	cp src/*.app ebin;
+	erlc -o ebin -I src src/*.erl;
+	erlc -o test_ebin test_src/*.erl;
+	erl -pa ebin -pa test_ebin -s mnesia_test start -sname mnesia -setcookie abc

@@ -17,7 +17,7 @@
 %% --------------------------------------------------------------------
 %% Include files
 %% --------------------------------------------------------------------
--include("infra.hrl").
+%-include("infra.hrl").
 %% --------------------------------------------------------------------
 
 %% --------------------------------------------------------------------
@@ -26,7 +26,9 @@
 %% --------------------------------------------------------------------
 -record(state,{}).
 
-
+-define(Master,"sthlm_1").
+-define(MnesiaNodes,['mnesia@sthlm_1','mnesia@asus']).
+%-define(MnesiaNodes,['mnesia@asus']).
 	  
 %% --------------------------------------------------------------------
 
@@ -34,16 +36,12 @@
 %% External functions
 %% ====================================================================
 
--export([create_schema/1,
-	 start_mnesia/1,
-	 create_table/0,
-	 insert/2,
-	 read/2,
-	 read_table/1
-	]).
 
 %% server interface
--export([ping/0
+-export([create_schema/0,
+	 delete_schema_file/0,
+	 load_texfile/2,
+	 ping/0	 
 	]).
 
 
@@ -61,6 +59,7 @@
 %% External functions
 %% ====================================================================
 
+%C="https://"++Uid++":"++Pwd++"@github.com/"++Uid++"/"++SId++".git".
 
 %% Asynchrounus Signals
 %boot_strap()->
@@ -68,7 +67,7 @@
  %   Port=list_to_integer(PortStr),
    % application:set_env([{boot_service,{port,Port}}]),
 %    application:start(boot_service).
-	
+       
 %% Gen server function
 
 start()-> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
@@ -76,26 +75,18 @@ stop()-> gen_server:call(?MODULE, {stop},infinity).
 
 
 %%----------------------------------------------------------------------
+create_schema()->
+    gen_server:call(?MODULE,{create_schema},infinity).
 
+delete_schema_file()->
+    gen_server:call(?MODULE,{delete_schema_file},infinity).
 
+load_texfile(Filename,Bin)->    
+    gen_server:call(?MODULE,{load_textfile,Filename,Bin},infinity).
+    
 ping()->
     gen_server:call(?MODULE,{ping},infinity).
 
-
-start_mnesia(NodeList)->
-    gen_server:call(?MODULE,{start_mnesia,NodeList},infinity).
-
-create_schema(NodeList)->
-    gen_server:call(?MODULE,{create_schema,NodeList},infinity).
-create_table()->
-    gen_server:call(?MODULE,{create_table},infinity).
-
-insert(Table,Info)->
-    gen_server:call(?MODULE,{insert,Table,Info},infinity).
-read(Table,Key)->
-    gen_server:call(?MODULE,{read,Table,Key},infinity).
-read_table(Table)->
-    gen_server:call(?MODULE,{read_table,Table},infinity).
 %%___________________________________________________________________
 
 
@@ -117,9 +108,18 @@ read_table(Table)->
 %
 %% --------------------------------------------------------------------
 init([]) ->
-					   
+    case net_adm:localhost() of
+	?Master->
+	    io:format("~p~n",[{?MODULE,?LINE,mnesia:create_schema(?MnesiaNodes)}]),
+	    mnesia:start(),
+	    [rpc:call(Node,application,stop,[mnesia])||Node<-?MnesiaNodes],   
+	    [rpc:call(Node,application,start,[mnesia])||Node<-?MnesiaNodes];    
+	_ ->
+	    ok
+    end,
+
     {ok, #state{}}.
-    
+
 %% --------------------------------------------------------------------
 %% Function: handle_call/3
 %% Description: Handling call messages
@@ -130,72 +130,29 @@ init([]) ->
 %%          {stop, Reason, Reply, State}   | (terminate/2 is called)
 %%          {stop, Reason, State}            (aterminate/2 is called)
 %% --------------------------------------------------------------------
-handle_call({start_mnesia,NodeList}, _From, State) ->
-    Reply=[rpc:call(Node,application,start,[mnesia])||Node<-NodeList],
-    {reply, Reply, State};
-
-handle_call({create_schema,NodeList}, _From, State) ->
-    Reply=mnesia:create_schema(NodeList),
-    {reply, Reply, State};
-
-
-handle_call({create_table}, _From, State) ->
-    mnesia:create_table(service_discovery,
-			[{type,bag},
-			 {attributes,record_info(fields,service_discovery)}]),
-    
-    mnesia:create_table(catalog,
-			      [{attributes,record_info(fields,catalog)}]),
-   
-    mnesia:create_table(nodes,
-			      [{attributes,record_info(fields,nodes)}]),
-
-    mnesia:create_table(deployment,
-			[{type,bag},
-			 {attributes,record_info(fields,deployment)}]),
-
-    mnesia:create_table(log,
-			[{type,bag},
-			 {attributes,record_info(fields,log)}]),
-    
-    Reply=ok,
-    {reply, Reply, State};
-
-
-handle_call({insert,Table,Info}, _From, State) ->
-    Reply=case rpc:call(node(),dbase_lib,create_item,[Table,Info]) of
-	      {badrpc,Err}->
-		  {error,[?MODULE,?LINE,Err,Table,Info]};
-	      InfoToStore->
-		  Fun=fun()->
-			      mnesia:write(InfoToStore)
-		      end,
-		  mnesia:transaction(Fun),
-		  ok
-	  end,
-    {reply, Reply, State};
-
-handle_call({read,Table,Key}, _From, State) ->
-    Reply = case mnesia:dirty_read(Table,Key) of
-		[]->
-		    {error,[not_found,Table,Key]};
-		R->
-		    R
-	    end,
-    {reply, Reply, State};
-
-handle_call({read_table,Table}, _From, State) ->
-    CatchAll = [{'_',[],['$_']}],
-    Reply=mnesia:dirty_select(Table, CatchAll),
-    {reply, Reply, State};
-
-handle_call({stop_service,ServiceId}, _From, State) ->
-    Reply=rpc:call(node(),loader,stop,[ServiceId]),
-    {reply, Reply, State};
 
 handle_call({ping}, _From, State) ->
     Reply={pong,node(),?MODULE},
     {reply, Reply, State};
+
+handle_call({create_schema}, _From, State) ->
+    Reply=mnesia:create_schema([?MnesiaNodes]),
+    mnesia:create_schema([?MnesiaNodes]),
+    [rpc:call(Node,application,stop,[mnesia])||Node<-?MnesiaNodes],   
+    [rpc:call(Node,application,start,[mnesia])||Node<-?MnesiaNodes],
+    {reply, Reply, State};
+
+handle_call({delete_schema_file}, _From, State) ->
+    Reply=os:cmd("rm -rf Mne*"),
+    {reply, Reply, State};
+
+handle_call({load_textfile,Filename,Bin}, _From, State) ->
+    file:delete(Filename),
+    ok=file:write_file(Filename,Bin),
+    Reply=mnesia:load_textfile(Filename),
+ %   file:delete(Filename),
+    {reply, Reply, State};
+
 
 handle_call({stop}, _From, State) ->
     {stop, normal, shutdown_ok, State};

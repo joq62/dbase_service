@@ -19,7 +19,7 @@
 -export([start/0]).
 
 
-
+-define(TEXTFILE,"./test_src/dbase_init.hrl").
 
 
 
@@ -40,12 +40,14 @@ cases_test()->
     setup(),
     %% Start application tests
 
-    ?debugMsg("test loader"),    
-    ?assertEqual(ok,dbase_test:start()),
+ %   ?debugMsg("computer_test"),    
+ %   ?assertEqual(ok,computer_test:start()),
+    ?debugMsg("init_test"),    
+    ?assertEqual(ok,init_test:start()),
 
       %% End application tests
   
-    cleanup(),
+  %  cleanup(),
     ok.
 
 
@@ -56,11 +58,14 @@ cases_test()->
 %% --------------------------------------------------------------------
 setup()->
     ?assertEqual(ok,application:start(dbase_service)), 
-    ?assertMatch({pong,_,_},dbase_service:ping()),  
+    ?assertMatch({pong,_,_},dbase_service:ping()),
+  %  {ok,Bin}=file:read_file(?TEXTFILE),
+  %  dbase_service:load_texfile("init_load",Bin),
+
     timer:sleep(500),
     ok.
 cleanup()->
     MyNode=node(),
-    [rpc:call(Node,init,stop,[])||Node<-['node1@asus',MyNode]],
+    [rpc:call(Node,init,stop,[])||Node<-[MyNode]],
   %  init:stop(),
     ok.

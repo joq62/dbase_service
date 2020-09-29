@@ -4,13 +4,13 @@
 %%% 
 %%% Created : 10 dec 2012
 %%% -------------------------------------------------------------------
--module(dbase_test). 
+-module(dbase_test_1). 
    
 %% --------------------------------------------------------------------
 %% Include files
 %% --------------------------------------------------------------------
 -include_lib("eunit/include/eunit.hrl").
--include("log.hrl").
+%-include("log.hrl").
 %% --------------------------------------------------------------------
 
 -export([start/0]).
@@ -28,29 +28,22 @@
 start()->
     ?debugMsg("start check intial dbase_service"),
     ?assertEqual(ok,init_dbase()),  
-    ?debugMsg("test1"),
-    ?assertEqual(ok,test1()), 
+%    ?debugMsg("test1"),
+%    ?assertEqual(ok,test1()), 
 
-    ?debugMsg("test2"),
-    ?assertEqual(ok,test2()), 
-    ?debugMsg("test3"),
-    ?assertEqual(ok,test3()), 
-    ?debugMsg("test4"),
-    ?assertEqual(ok,test4()), 
+%    ?debugMsg("test2"),
+%    ?assertEqual(ok,test2()), 
+%    ?debugMsg("test3"),
+%    ?assertEqual(ok,test3()), 
+%    ?debugMsg("test4"),
+%    ?assertEqual(ok,test4()), 
 
     ?debugMsg("Dbase test succeded "),    
     ok.
 
 %%-----------------------------------------------------------------
 init_dbase()->
-    rpc:call('node1@asus',application,stop,[mnesia]),
-    rpc:call('node1@asus',application,stop,[dbase_service]),
 
-    MyNode=node(),
-    ?assertEqual(ok,dbase_service:create_schema([MyNode,'node1@asus'])),
-    ?assertEqual([{error,{already_started,dbase_service}},ok],[rpc:call(Node,application,start,[dbase_service])||Node<-[MyNode,'node1@asus']]),
-    ?assertEqual([ok,ok],dbase_service:start_mnesia([MyNode,'node1@asus'])),
-    ?assertEqual(ok,dbase_service:create_table()),
     ok.
 
 test1()->
@@ -106,13 +99,3 @@ test3()->
 
     ok.
 
-test4()->
-    ?LOG_INFO(info,"info1"),
-    ?assertMatch([{log,glurk,_,_,_,_,_,_,_,_}],dbase_service:read(log,glurk)),    
-    ?LOG_INFO(error,"error1"),
-    ?assertMatch([{log,glurk,_,_,_,_,_,_,_,"info1"},
-		  {log,glurk,_,_,_,_,_,_,_,"error1"}],dbase_service:read_table(log)),    
-    Log=dbase_service:read_table(log),
-    true=lists:keymember("info1",10,Log),
-    false=lists:keymember("glurk",10,Log),
-    ok.
