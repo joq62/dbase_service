@@ -26,7 +26,7 @@
 %% --------------------------------------------------------------------
 -record(state,{}).
 
--define(Master,"sthlm_1").
+-define(Master,"asus").
 -define(MnesiaNodes,['mnesia@sthlm_1','mnesia@asus']).
 %-define(MnesiaNodes,['mnesia@asus']).
 	  
