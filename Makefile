@@ -3,7 +3,7 @@ all:
 	rm -rf */*.beam;
 	rm -rf *.beam erl_crash.dump */erl_crash.dump */*/erl_crash.dump;
 #	include
-	git clone https://github.com/joq62/include.git;
+#	git clone https://github.com/joq62/include.git;
 	cp src/*.app ebin;
 	erlc -I include -o ebin src/*.erl;
 doc_gen:

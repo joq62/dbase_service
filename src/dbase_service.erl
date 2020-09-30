@@ -111,15 +111,15 @@ ping()->
 %
 %% --------------------------------------------------------------------
 init([]) ->
-  %  case net_adm:localhost() of
-%	?Master->
-%	    io:format("~p~n",[{?MODULE,?LINE,mnesia:create_schema(?MnesiaNodes)}]),
-%	    [rpc:call(Node,application,stop,[mnesia])||Node<-?MnesiaNodes],   
-%	    [rpc:call(Node,application,start,[mnesia])||Node<-?MnesiaNodes];    
-%	_ ->
-%	    mnesia:start()
- %   end,
-    mnesia:start(),
+    case net_adm:localhost() of
+	?Master->
+	    io:format("~p~n",[{?MODULE,?LINE,mnesia:create_schema(?MnesiaNodes)}]),
+	    [rpc:call(Node,application,stop,[mnesia])||Node<-?MnesiaNodes],   
+	    [rpc:call(Node,application,start,[mnesia])||Node<-?MnesiaNodes];    
+	_ ->
+	    ok
+    end,
+    
     {ok, #state{}}.
 
 %% --------------------------------------------------------------------
