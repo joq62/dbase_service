@@ -40,7 +40,8 @@
 %% server interface
 -export([create_schema/0,
 	 delete_schema_file/0,
-	 load_texfile/2,
+	 load_textfile/2,
+	 load_textfile/1,
 	 ping/0	 
 	]).
 
@@ -81,8 +82,10 @@ create_schema()->
 delete_schema_file()->
     gen_server:call(?MODULE,{delete_schema_file},infinity).
 
-load_texfile(Filename,Bin)->    
+load_textfile(Filename,Bin)->    
     gen_server:call(?MODULE,{load_textfile,Filename,Bin},infinity).
+load_textfile(FileName)->    
+    gen_server:call(?MODULE,{load_textfile,FileName},infinity).
     
 ping()->
     gen_server:call(?MODULE,{ping},infinity).
@@ -111,7 +114,6 @@ init([]) ->
     case net_adm:localhost() of
 	?Master->
 	    io:format("~p~n",[{?MODULE,?LINE,mnesia:create_schema(?MnesiaNodes)}]),
-	    mnesia:start(),
 	    [rpc:call(Node,application,stop,[mnesia])||Node<-?MnesiaNodes],   
 	    [rpc:call(Node,application,start,[mnesia])||Node<-?MnesiaNodes];    
 	_ ->
@@ -137,13 +139,17 @@ handle_call({ping}, _From, State) ->
 
 handle_call({create_schema}, _From, State) ->
     Reply=mnesia:create_schema([?MnesiaNodes]),
-    mnesia:create_schema([?MnesiaNodes]),
     [rpc:call(Node,application,stop,[mnesia])||Node<-?MnesiaNodes],   
     [rpc:call(Node,application,start,[mnesia])||Node<-?MnesiaNodes],
     {reply, Reply, State};
 
 handle_call({delete_schema_file}, _From, State) ->
     Reply=os:cmd("rm -rf Mne*"),
+    {reply, Reply, State};
+
+handle_call({load_textfile,FileName}, _From, State) ->
+    Reply=mnesia:load_textfile(FileName),
+ %   file:delete(Filename),
     {reply, Reply, State};
 
 handle_call({load_textfile,Filename,Bin}, _From, State) ->
