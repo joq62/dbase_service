@@ -115,7 +115,7 @@ init([]) ->
 	    [rpc:call(Node,application,stop,[mnesia])||Node<-?MnesiaNodes],   
 	    [rpc:call(Node,application,start,[mnesia])||Node<-?MnesiaNodes];    
 	_ ->
-	    ok
+	    mnesia:start()
     end,
 
     {ok, #state{}}.
