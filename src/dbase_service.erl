@@ -27,7 +27,8 @@
 -record(state,{}).
 
 -define(Master,"asus").
--define(MnesiaNodes,['mnesia@sthlm_1','mnesia@asus']).
+-define(MasterNode,'10250@asus').
+-define(MnesiaNodes,['10250@asus','mnesia@sthlm_1']).
 %-define(MnesiaNodes,['mnesia@asus']).
 	  
 %% --------------------------------------------------------------------
@@ -112,11 +113,10 @@ ping()->
 %% --------------------------------------------------------------------
 init([]) ->
 
-    [rpc:call(Node,application,stop,[mnesia])||Node<-?MnesiaNodes],  
     case net_adm:localhost() of
 	?Master->
+	    [rpc:call(Node,application,stop,[mnesia])||Node<-?MnesiaNodes],   
 	    io:format("~p~n",[{?MODULE,?LINE,mnesia:create_schema(?MnesiaNodes)}]),
-	%    [rpc:call(Node,application,stop,[mnesia])||Node<-?MnesiaNodes],   
 	    [rpc:call(Node,application,start,[mnesia])||Node<-?MnesiaNodes];    
 	_ ->
 	    ok
