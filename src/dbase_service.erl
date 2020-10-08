@@ -28,7 +28,7 @@
 
 -define(Master,"asus").
 -define(MasterNode,'10250@asus').
--define(MnesiaNodes,['10250@asus','mnesia@sthlm_1']).
+-define(MnesiaNodes,['10250@asus','10250@sthlm_1']).
 %-define(MnesiaNodes,['mnesia@asus']).
 	  
 %% --------------------------------------------------------------------
