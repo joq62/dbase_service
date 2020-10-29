@@ -4,7 +4,7 @@
 %%% 
 %%% Create1d : 10 dec 2012
 %%% -------------------------------------------------------------------
--module(dbase_service_tests). 
+-module(dbase_tests). 
    
 %% --------------------------------------------------------------------
 %% Include files
@@ -18,11 +18,6 @@
 %% External exports
 -export([start/0]).
 
-
--define(TEXTFILE,"./test_src/dbase_init.hrl").
-
-
-
 %% ====================================================================
 %% External functions
 %% ====================================================================
@@ -33,21 +28,26 @@
 %% Returns: non
 %% --------------------------------------------------------------------
 start()->
-    spawn(fun()->eunit:test({timeout,1*60,dbase_service}) end).
-
-cases_test()->
-    ?debugMsg("Test system setup"),
+    ?debugMsg("Start setup"),
     setup(),
+    ?debugMsg("Stop setup"),   
     %% Start application tests
 
+    ?debugMsg("Start init_tables"),
+    ?assertEqual(ok,init_tables:start()),
+    ?debugMsg("Stop init_tables"),   
+
+    ?debugMsg("Start add_node"),
+    ?assertEqual(ok,add_node:start()),
+    ?debugMsg("Stop add_node"), 
  %   ?debugMsg("computer_test"),    
  %   ?assertEqual(ok,computer_test:start()),
-    ?debugMsg("init_test"),    
-    ?assertEqual(ok,init_test:start()),
+ %   ?debugMsg("init_test"),    
+ %   ?assertEqual(ok,init_test:start()),
 
       %% End application tests
   
-  %  cleanup(),
+    cleanup(),
     ok.
 
 
@@ -57,8 +57,8 @@ cases_test()->
 %% Returns: non
 %% --------------------------------------------------------------------
 setup()->
-    ?assertEqual(ok,application:start(dbase_service)), 
-    ?assertMatch({pong,_,_},dbase_service:ping()),
+    ?assertEqual(ok,application:start(dbase)), 
+    ?assertMatch({pong,_,_},dbase:ping()),
   %  {ok,Bin}=file:read_file(?TEXTFILE),
   %  dbase_service:load_texfile("init_load",Bin),
 

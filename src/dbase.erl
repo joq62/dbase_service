@@ -11,7 +11,7 @@
 %%% 
 %%%     
 %%% -------------------------------------------------------------------
--module(dbase_service). 
+-module(dbase). 
 
 -behaviour(gen_server).
 %% --------------------------------------------------------------------
@@ -26,10 +26,6 @@
 %% --------------------------------------------------------------------
 -record(state,{}).
 
--define(Master,"asus").
--define(MasterNode,'10250@asus').
--define(MnesiaNodes,['10250@asus','10250@sthlm_1']).
-%-define(MnesiaNodes,['mnesia@asus']).
 	  
 %% --------------------------------------------------------------------
 
@@ -39,7 +35,8 @@
 
 
 %% server interface
--export([create_schema/0,
+-export([init_table_info/1,
+	 
 	 delete_schema_file/0,
 	 load_textfile/2,
 	 load_textfile/1,
@@ -77,8 +74,8 @@ stop()-> gen_server:call(?MODULE, {stop},infinity).
 
 
 %%----------------------------------------------------------------------
-create_schema()->
-    gen_server:call(?MODULE,{create_schema},infinity).
+init_table_info(Info)->
+    gen_server:call(?MODULE,{init_table_info,Info},infinity).
 
 delete_schema_file()->
     gen_server:call(?MODULE,{delete_schema_file},infinity).
@@ -112,16 +109,7 @@ ping()->
 %
 %% --------------------------------------------------------------------
 init([]) ->
-
-    case net_adm:localhost() of
-	?Master->
-	    [rpc:call(Node,application,stop,[mnesia])||Node<-?MnesiaNodes],   
-	    io:format("~p~n",[{?MODULE,?LINE,mnesia:create_schema(?MnesiaNodes)}]),
-	    [rpc:call(Node,application,start,[mnesia])||Node<-?MnesiaNodes];    
-	_ ->
-	    ok
-    end,
-    
+    dbase_lib:start([]),
     {ok, #state{}}.
 
 %% --------------------------------------------------------------------
@@ -139,10 +127,8 @@ handle_call({ping}, _From, State) ->
     Reply={pong,node(),?MODULE},
     {reply, Reply, State};
 
-handle_call({create_schema}, _From, State) ->
-    Reply=mnesia:create_schema([?MnesiaNodes]),
-    [rpc:call(Node,application,stop,[mnesia])||Node<-?MnesiaNodes],   
-    [rpc:call(Node,application,start,[mnesia])||Node<-?MnesiaNodes],
+handle_call({init_table_info,Info}, _From, State) ->
+    Reply=dbase_lib:create_table(Info),
     {reply, Reply, State};
 
 handle_call({delete_schema_file}, _From, State) ->

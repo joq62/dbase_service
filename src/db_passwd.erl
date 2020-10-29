@@ -1,13 +1,13 @@
--module(db_deployment).
+-module(db_passwd).
 -import(lists, [foreach/2]).
 -compile(export_all).
 
 -include_lib("stdlib/include/qlc.hrl").
--include("db_deployment.hrl").
+-include("db_passwd.hrl").
 
 
--define(TABLE,deployment).
--define(RECORD,deployment).
+-define(TABLE,passwd).
+-define(RECORD,passwd).
 
 create_table()->
     mnesia:create_table(?TABLE, [{attributes, record_info(fields, ?RECORD)}]),
@@ -17,35 +17,44 @@ create_table(NodeList)->
 				 {disc_copies,NodeList}]),
     mnesia:wait_for_tables([?TABLE], 20000).
 
-create({?MODULE,DeplId,SpecId,Vsn,Date,Time,SdList}) ->
-    create(DeplId,SpecId,Vsn,Date,Time,SdList).
-create(DeplId,SpecId,Vsn,Date,Time,SdList) ->
-    Record=#?RECORD{deployment_id=DeplId,
-		    deployment_spec_id=SpecId,
-		    deployment_spec_vsn=Vsn,
-		    date=Date,
-		    time=Time,
-		    sd_list=SdList},
-
+create({?MODULE,Id,PassWd}) ->
+    create(Id,PassWd).
+create(Id,PassWd) ->
+    Record=#?RECORD{user_id=Id,passwd=PassWd},
     F = fun() -> mnesia:write(Record) end,
     mnesia:transaction(F).
 
 read_all() ->
     Z=do(qlc:q([X || X <- mnesia:table(?TABLE)])),
-    [{DeplId,SpecId,Vsn,Date,Time,SdList}||{?RECORD,DeplId,SpecId,Vsn,Date,Time,SdList}<-Z].
+    [{XId,XPwd}||{?RECORD,XId,XPwd}<-Z].
 
 
-read(DeplId)->
+
+read(Id) ->
     Z=do(qlc:q([X || X <- mnesia:table(?TABLE),
-		   X#?RECORD.deployment_id==DeplId])),
-    [{XDeplId,SpecId,Vsn,Date,Time,SdList}||{?RECORD,XDeplId,SpecId,Vsn,Date,Time,SdList}<-Z].
+		   X#?RECORD.user_id==Id])),
+    [{XId,XPwd}||{?RECORD,XId,XPwd}<-Z].
 
-delete(DeplId) ->
+update(Id,NewPwd) ->
+    F = fun() -> 
+		RecordList=[X||X<-mnesia:read({?TABLE,Id}),
+			    X#?RECORD.user_id==Id],
+		case RecordList of
+		    []->
+			mnesia:abort(?TABLE);
+		    [S1]->
+			mnesia:delete_object(S1), 
+			mnesia:write(#?RECORD{user_id=Id,passwd=NewPwd})
+		end
+	end,
+    mnesia:transaction(F).
+
+delete(Id) ->
 
     F = fun() -> 
-		Deployment=[X||X<-mnesia:read({?TABLE,DeplId}),
-			       X#?RECORD.deployment_id==DeplId],
-		case Deployment of
+		RecordList=[X||X<-mnesia:read({?TABLE,Id}),
+			    X#?RECORD.user_id==Id],
+		case RecordList of
 		    []->
 			mnesia:abort(?TABLE);
 		    [S1]->

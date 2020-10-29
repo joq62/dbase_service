@@ -10,41 +10,11 @@ doc_gen:
 	rm -rf  node_config logfiles doc/*;
 	erlc ../doc_gen.erl;
 	erl -s doc_gen start -sname doc
-
-start:
-	rm -rf  test_ebin/* ebin/* include configs *_service  erl_crasch.dump;
-#	include
-#	git clone https://github.com/joq62/include.git;	
-	cp src/*.app ebin;
-	erlc -o ebin src/*.erl;
-	erl -pa ebin -s dbase_service start -sname mnesia -setcookie abc
 test:
-	rm -rf  test_ebin/* ebin/* include configs *_service  erl_crasch.dump;
-#	include
-#	git clone https://github.com/joq62/include.git;	
+	rm -rf  test_ebin/* ebin/* Mn*  erl_crasch.dump;
 	cp src/*.app ebin;
-	erlc -o ebin src/*.erl;
+	erlc -I src -o ebin src/*.erl;
 #	test
-	erlc -o test_ebin test_src/*.erl;
+	erlc -I src -o test_ebin test_src/*.erl;
 #	erl -pa ebin -sname node1 -detached;
-	erl -pa ebin -pa test_ebin -s dbase_service_tests start -sname mnesia -setcookie abc
-
-second:
-	rm -rf  test_ebin/* ebin/* include configs *_service  erl_crasch.dump;
-#	include
-#	git clone https://github.com/joq62/include.git;	
-	cp src/*.app ebin;
-	erlc -o ebin src/*.erl;
-#	test
-	erlc -o test_ebin test_src/*.erl;
-#	erl -pa ebin -sname node1 -detached;
-	erl -pa ebin -pa test_ebin -s dbase_second_tests start -sname mnesia -setcookie abc
-
-node2:
-	erl -pa ebin -pa test_ebin -s dbase_service_tests start -sname backup_test -setcookie abc
-mnesia:
-	rm -rf  ebin/* test_ebin/* include configs *_service  erl_crasch.dump;
-	cp src/*.app ebin;
-	erlc -o ebin -I src src/*.erl;
-	erlc -o test_ebin test_src/*.erl;
-	erl -pa ebin -pa test_ebin -s mnesia_test start -sname mnesia -setcookie abc
+	erl -pa ebin -pa test_ebin -s dbase_tests start -sname dbase -setcookie abc

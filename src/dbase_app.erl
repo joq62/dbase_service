@@ -1,17 +1,19 @@
 %% Author: uabjle
 %% Created: 10 dec 2012
 %% Description: TODO: Add description to application_org
--module(dbase_lib).
+-module(dbase_app).
  
+-behaviour(application).
 %% --------------------------------------------------------------------
 %% Include files
 %% --------------------------------------------------------------------
--include("infra.hrl").
+
 %% --------------------------------------------------------------------
 %% Behavioural exports
 %% --------------------------------------------------------------------
 -export([
-	 create_item/2
+	 start/2,
+	 stop/1
         ]).
 
 %% --------------------------------------------------------------------
@@ -41,32 +43,15 @@
 %%          {ok, Pid, State} |
 %%          {error, Reason}
 %% --------------------------------------------------------------------
-create_item(catalog,{ServiceId,Source})->
-    #catalog{service_id=ServiceId,source=Source};
-
-create_item(service_discovery,{ServiceId,Node})->
-    #service_discovery{service_id=ServiceId,node=Node};
-
-create_item(deployment,{ServiceId,Node})->
-    #deployment{service_id=ServiceId,node=Node};
-
-create_item(log,{LogNode,Type,Node,Module,File,Line,Date,Time,Msg})->
-    #log{log_node=LogNode,
-	     type=Type,
-	     node=Node,
-	     module=Module,
-	     file=File,
-	     line=Line,
-	     date=Date,
-	     time=Time,
-	     msg=Msg
-	}.
-    
-
+start(_Type, _StartArgs) ->
+    {ok,Pid}= dbase_sup:start(),
+    {ok,Pid}.
 %% --------------------------------------------------------------------
 %% Func: stop/1
 %% Returns: any
 %% --------------------------------------------------------------------
+stop(_State) ->
+    ok.
 
 %% ====================================================================
 %% Internal functions
