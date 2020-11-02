@@ -36,7 +36,7 @@
 
 %% server interface
 -export([init_table_info/1,
-	 
+	 add_node/1,
 	 delete_schema_file/0,
 	 load_textfile/2,
 	 load_textfile/1,
@@ -76,6 +76,9 @@ stop()-> gen_server:call(?MODULE, {stop},infinity).
 %%----------------------------------------------------------------------
 init_table_info(Info)->
     gen_server:call(?MODULE,{init_table_info,Info},infinity).
+
+add_node(Vm)->
+    gen_server:call(?MODULE,{add_node,Vm},infinity).
 
 delete_schema_file()->
     gen_server:call(?MODULE,{delete_schema_file},infinity).
@@ -125,6 +128,10 @@ init([]) ->
 
 handle_call({ping}, _From, State) ->
     Reply={pong,node(),?MODULE},
+    {reply, Reply, State};
+
+handle_call({add_node,Vm}, _From, State) ->
+    Reply=dbase_lib:add_node(Vm),
     {reply, Reply, State};
 
 handle_call({init_table_info,Info}, _From, State) ->

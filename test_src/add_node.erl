@@ -72,7 +72,8 @@ add(VmId)->
     Vm=list_to_atom(VmId++"@"++HostId),
     pong=net_adm:ping(Vm),
   %  dbase_lib:add_node(Vm),
-    dbase_lib:add_node(Vm),
+    dbase:add_node(Vm),
+%    dbase_lib:add_node(Vm),
     ok=check_db_values(VmId),
     io:format(" ~p~n",[{?MODULE,?LINE,mnesia:system_info()}]),
     
