@@ -5,13 +5,17 @@
 
 -include_lib("stdlib/include/qlc.hrl").
 -include("db_vm.hrl").
--export([create_table/0,	 
+-export([
+	 host_id/1,
+	 type/1,
+	 status/1,
+	 info/1,
+	 create_table/0,	 
 	 create_table/1,
 	 create/5,create/1,
 	 delete/1,
 	 read_all/0, read/1,
-	 update/2,
-	 host_id/1,type/1,status/1
+	 update/2
 	]).
 
 %-record(vm,
@@ -29,6 +33,10 @@
 
 %% Special
 
+info(Vm)->
+    Z=do(qlc:q([X || X <- mnesia:table(?TABLE),
+		     X#?RECORD.vm==Vm])),
+    [{XVm,HostId,VmId,Type,Status}||{?RECORD,XVm,HostId,VmId,Type,Status}<-Z].
 host_id(Key)->
     Z=do(qlc:q([X || X <- mnesia:table(?TABLE),
 		     X#?RECORD.host_id==Key])),
