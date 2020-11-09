@@ -5,5 +5,6 @@
 	  deployment_spec_vsn,
 	  date,
 	  time,
-	  sd_list
+	  sd_list,
+	  status  %started, stopped 
 	}).

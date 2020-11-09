@@ -13,13 +13,16 @@
 % Start Special 
 severity(Severity)->
     Z=do(qlc:q([X || X <- mnesia:table(?TABLE)])),
-    L1=[{XSeverity,Vm,Module,Line,XSeverity,Date,Time,DateTime,Text}||{?RECORD,XSeverity,Vm,Module,Line,Date,Time,_DateTime,Text}<-Z,
-							     Severity==XSeverity],
-    L2=qsort(L1,[]),
-    L2.
+    L1=[{XSeverity,Vm,Module,Line,Date,Time,DateTime,Text}||{?RECORD,XSeverity,Vm,Module,Line,Date,Time,DateTime,Text}<-Z,
+								      Severity==XSeverity],
+    L2=sort_by_date(L1),
+%    io:format("L2 = ~p~n",[L2]),
+    lists:reverse(L2).
 
-
-
+latest(0,_)->
+    [];
+latest(Len,all)->
+   lists:sublist(read_all(),Len).
 % End Special 
 create_table()->
     mnesia:create_table(?TABLE, [{attributes, record_info(fields, ?RECORD)},
@@ -30,7 +33,7 @@ create_table(NodeList)->
 				 {disc_copies,NodeList}]),
     mnesia:wait_for_tables([?TABLE], 20000).
 
-create({?MODULE,Vm,Module,Line,Severity,Date,Time,Text})->
+create({db_log,Vm,Module,Line,Severity,Date,Time,Text})->
     create(Vm,Module,Line,Severity,Date,Time,Text).
 create(Vm,Module,Line,Severity,Date,Time,Text)->
     DateTime=calendar:datetime_to_gregorian_seconds({Date,Time}),
@@ -48,7 +51,10 @@ create(Vm,Module,Line,Severity,Date,Time,Text)->
 
 read_all() ->
     Z=do(qlc:q([X || X <- mnesia:table(?TABLE)])),
-    [{Severity,Vm,Module,Line,Date,Time,Text}||{?RECORD,Severity,Vm,Module,Line,Date,Time,_DateTime,Text}<-Z].
+    L1=[{Severity,Vm,Module,Line,Date,Time,DateTime,Text}||{?RECORD,Severity,Vm,Module,Line,Date,Time,DateTime,Text}<-Z],
+ %   io:format("L1 = ~p~n",[L1]),
+    L2=sort_by_date(L1),
+    lists:reverse(L2).
 
 
 delete(Vm,Module,Line,Severity,Date,Time,Text) ->
@@ -79,3 +85,18 @@ do(Q) ->
   Val.
 
 %%-------------------------------------------------------------------------
+sort_by_date([])->
+    [];
+%sort_by_date([{Severity,Vm,Module,Line,Date,Time,DateTime,Text}|T]) ->
+%    sort_by_date([{XSeverity,XVm,XModule,XLine,XDate,XTime,XDateTime,XText}||{XSeverity,XVm,XModule,XLine,XDate,XTime,XDateTime,XText}<-T,
+%									     XDateTime=<DateTime])
+%	++[{Severity,Vm,Module,Line,Date,Time,Text}]++
+%	sort_by_date([{XSeverity,XVm,XModule,XLine,XDate,XTime,XDateTime,XText}||{XSeverity,XVm,XModule,XLine,XDate,XTime,XDateTime,XText}<-T,
+%										 XDateTime>DateTime]).
+
+sort_by_date([{Severity,Vm,Module,Line,Date,Time,DateTime,Text}|T]) ->
+    lists:append([sort_by_date([{XSeverity,XVm,XModule,XLine,XDate,XTime,XDateTime,XText}||{XSeverity,XVm,XModule,XLine,XDate,XTime,XDateTime,XText}<-T,
+									     XDateTime=<DateTime]),
+	[{Severity,Vm,Module,Line,Date,Time,Text}],
+	sort_by_date([{XSeverity,XVm,XModule,XLine,XDate,XTime,XDateTime,XText}||{XSeverity,XVm,XModule,XLine,XDate,XTime,XDateTime,XText}<-T,
+										 XDateTime>DateTime])]).
