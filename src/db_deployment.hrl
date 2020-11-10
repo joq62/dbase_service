@@ -5,6 +5,9 @@
 	  deployment_spec_vsn,
 	  date,
 	  time,
-	  sd_list,
+	  host_id,
+	  vm_id,
+	  vm,
+	  sd_list, %[{ServiceId,Vsn}] 
 	  status  %started, stopped 
 	}).

@@ -8,6 +8,22 @@
 -define(TABLE,sd).
 -define(RECORD,sd).
 
+%Start Special 
+
+get(ServiceId)->
+    X=do(qlc:q([X || X <- mnesia:table(?TABLE),
+		     X#?RECORD.service_id==ServiceId])),
+    [XVm||{?RECORD,_XServiceId,_XVsn,_XHostId,_XVmId,XVm}<-X].
+
+get(ServiceId,Vsn) ->
+    Z=do(qlc:q([X || X <- mnesia:table(?TABLE),
+		     X#?RECORD.service_id==ServiceId,
+		     X#?RECORD.vsn==Vsn])),
+    [XVm||{?RECORD,_XServiceId,_XVsn,_XHostId,_XVmId,XVm}<-Z].
+
+
+% End Special
+
 create_table()->
     mnesia:create_table(?TABLE, [{attributes, record_info(fields, ?RECORD)},
 				{type,bag}]),
@@ -30,7 +46,8 @@ create(ServiceId,Vsn,HostId,VmId,Vm) ->
     mnesia:transaction(F).
 
 read_all() ->
-  do(qlc:q([X || X <- mnesia:table(?TABLE)])).
+    Z=do(qlc:q([X || X <- mnesia:table(?TABLE)])),
+    [{XServiceId,XVsn,XHostId,XVmId,XVm}||{?RECORD,XServiceId,XVsn,XHostId,XVmId,XVm}<-Z].
 
 
 
