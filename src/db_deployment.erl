@@ -72,7 +72,8 @@ read_all() ->
 read(DeplId)->
     Z=do(qlc:q([X || X <- mnesia:table(?TABLE),
 		   X#?RECORD.deployment_id==DeplId])),
-    [{XDeplId,SpecId,Vsn,Date,Time,HostId,VmId,SdList,Status}||{?RECORD,XDeplId,SpecId,Vsn,Date,Time,HostId,VmId,_Vm,SdList,Status}<-Z].
+    [Y]=[{XDeplId,SpecId,Vsn,Date,Time,HostId,VmId,SdList,Status}||{?RECORD,XDeplId,SpecId,Vsn,Date,Time,HostId,VmId,_Vm,SdList,Status}<-Z],
+    Y.
 
 delete(DeplId) ->
     F = fun() -> 
