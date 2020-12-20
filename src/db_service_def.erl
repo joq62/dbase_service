@@ -19,12 +19,13 @@ create_table(NodeList)->
 				 {disc_copies,NodeList}]),
     mnesia:wait_for_tables([?TABLE], 20000).
 
-create({?MODULE,ServiceId,Vsn,GitUserId})->
-    create(ServiceId,Vsn,GitUserId).
-create(ServiceId,Vsn,GitUserId)->
+create({?MODULE,ServiceId,Vsn,StartCmd,GitPath})->
+    create(ServiceId,Vsn,StartCmd,GitPath).
+create(ServiceId,Vsn,StartCmd,GitPath)->
     Record=#?RECORD{ service_id=ServiceId,
 		     vsn=Vsn,
-		     git_user_id=GitUserId},
+		     start_cmd=StartCmd,
+		     gitpath=GitPath},
     F = fun() -> mnesia:write(Record) end,
     mnesia:transaction(F).
 
@@ -37,15 +38,15 @@ read_all() ->
 read(ServiceId) ->
     Z=do(qlc:q([X || X <- mnesia:table(?TABLE),
 		   X#?RECORD.service_id==ServiceId])),
-    [{XServiceId,XVsn,XGitUserId}||{?RECORD,XServiceId,XVsn,XGitUserId}<-Z].
+    [{XServiceId,XVsn,XStartCmd,XGitPath}||{?RECORD,XServiceId,XVsn,XStartCmd,XGitPath}<-Z].
 
 read(ServiceId,Vsn) ->
     Z=do(qlc:q([X || X <- mnesia:table(?TABLE),
-		   X#?RECORD.service_id==ServiceId,
+		     X#?RECORD.service_id==ServiceId,
 		     X#?RECORD.vsn==Vsn])),
-    [{XServiceId,XVsn,XGitUserId}||{?RECORD,XServiceId,XVsn,XGitUserId}<-Z].
+    [{XServiceId,XVsn,XStartCmd,XGitPath}||{?RECORD,XServiceId,XVsn,XStartCmd,XGitPath}<-Z].
 
-update(Id,Vsn,NewVsn,NewSource) ->
+update(Id,Vsn,NewVsn,NewGitPath) ->
     F = fun() -> 
 		ServiceDef=[X||X<-mnesia:read({?TABLE,Id}),
 			    X#?RECORD.service_id==Id,X#?RECORD.vsn==Vsn],
@@ -54,7 +55,7 @@ update(Id,Vsn,NewVsn,NewSource) ->
 			mnesia:abort(?TABLE);
 		    [S1]->
 			mnesia:delete_object(S1), 
-			mnesia:write(#?RECORD{service_id=Id,vsn=NewVsn,git_user_id=NewSource})
+			mnesia:write(#?RECORD{service_id=Id,vsn=NewVsn,gitpath=NewGitPath})
 		end
 	end,
     mnesia:transaction(F).

@@ -1,6 +1,7 @@
 -record(service_def,
 	{
-	  service_id,
-	  vsn,
-	  git_user_id
+	 service_id,
+	 vsn,
+	 start_cmd,
+	 gitpath
 	}).
