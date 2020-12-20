@@ -2,7 +2,8 @@ all:
 	rm -rf *@asus *.info configs  logfiles *_service include *~ */*~ */*/*~;
 	rm -rf */*.beam;
 	rm -rf *.beam erl_crash.dump */erl_crash.dump */*/erl_crash.dump;
-	cp src/*.app ebin
+	cp src/*.app ebin;
+	erlc -o ebin src/*.erl
 doc_gen:
 	rm -rf  node_config logfiles doc/*;
 	erlc ../doc_gen.erl;

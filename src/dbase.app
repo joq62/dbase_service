@@ -2,7 +2,7 @@
 %% application.
 {application,dbase,
 [{description, "dbase" },
-{vsn, "0.0.1" },
+{vsn, "1.0.0" },
 {modules, [dbase_app,dbase_sup,dbase,dbase_lib]},
 {registered,[dbase]},
 {applications, [kernel,stdlib]},
