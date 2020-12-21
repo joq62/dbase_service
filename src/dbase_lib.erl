@@ -17,6 +17,7 @@
 -include("db_service_def.hrl").
 -include("db_vm.hrl").
 -include("db_log.hrl").
+-include("db_app_spec.hrl").
 
 %% --------------------------------------------------------------------
 
@@ -89,6 +90,7 @@ add_node(Vm)->
     mnesia:add_table_copy(service_def, Vm, ram_copies),
     mnesia:add_table_copy(vm, Vm, ram_copies),
     mnesia:add_table_copy(log, Vm, ram_copies),
+    mnesia:add_table_copy(app_spec, Vm, ram_copies),
     Tables=mnesia:system_info(tables),
     mnesia:wait_for_tables(Tables,?WAIT_FOR_TABLES),
     ok.
@@ -111,6 +113,7 @@ db_init([])->
     mnesia:create_table(vm,[{attributes, record_info(fields,vm)}]),    
     mnesia:create_table(log,[{attributes, record_info(fields,log)},
 			    {type,bag}]),    
+    mnesia:create_table(app_spec,[{attributes, record_info(fields,app_spec)}]),   
     ok;
 
 db_init(AllNodes)->
@@ -141,6 +144,7 @@ add_extra_nodes([Node|T])->
 	    mnesia:add_table_copy(service_def, node(), ram_copies),
 	    mnesia:add_table_copy(vm, node(), ram_copies),
 	    mnesia:add_table_copy(log, node(), ram_copies),
+	    mnesia:add_table_copy(app_spec, node(), ram_copies),
 	    Tables=mnesia:system_info(tables),
 	    mnesia:wait_for_tables(Tables,?WAIT_FOR_TABLES);
 	_ ->

@@ -1,12 +1,14 @@
--module(db_deployment_spec).
+-module(db_app_spec).
 -import(lists, [foreach/2]).
 -compile(export_all).
 
 -include_lib("stdlib/include/qlc.hrl").
--include("db_deployment_spec.hrl").
+-include("db_app_spec.hrl").
 
--define(TABLE,deployment_spec).
--define(RECORD,deployment_spec).
+
+
+-define(TABLE,app_spec).
+-define(RECORD,app_spec).
 
 create_table()->
     mnesia:create_table(?TABLE, [{attributes, record_info(fields, ?RECORD)},
@@ -17,37 +19,38 @@ create_table(NodeList)->
 				 {disc_copies,NodeList}]),
     mnesia:wait_for_tables([?TABLE], 20000).
 
-create({?MODULE,SpecId,Vsn,Num,Restrictions,AppSpecs}) ->
-    create(SpecId,Vsn,Num,Restrictions,AppSpecs).
-create(SpecId,Vsn,Num,Restrictions,AppSpecs) ->
-    Record=#deployment_spec{deployment_spec_id=SpecId,
-			    vsn=Vsn,
-			    num_instances=Num,
-			    restrictions=Restrictions,
-			    applications=AppSpecs
-			   },
+create({?MODULE,AppId,Vsn,Services})->
+    create(AppId,Vsn,Services).
+create(AppId,Vsn,Services)->
+    Record=#?RECORD{ app_id=AppId,
+		     vsn=Vsn,
+		     services=Services},
     F = fun() -> mnesia:write(Record) end,
     mnesia:transaction(F).
 
 read_all() ->
     Z=do(qlc:q([X || X <- mnesia:table(?TABLE)])),
-    [{SpecId,Vsn,Num,Restrictions,AppSpecs}||{?RECORD,SpecId,Vsn,Num,Restrictions,AppSpecs}<-Z].
+    [{AppId,Vsn,Services}||{?RECORD,AppId,Vsn,Services}<-Z].
 
 
 
-read(SpecId,Vsn) ->
+read(AppId) ->
     Z=do(qlc:q([X || X <- mnesia:table(?TABLE),
-		     X#?RECORD.deployment_spec_id==SpecId,
+		   X#?RECORD.app_id==AppId])),
+    [{XAppId,XVsn,XServices}||{?RECORD,XAppId,XVsn,XServices}<-Z].
+
+read(AppId,Vsn) ->
+    Z=do(qlc:q([X || X <- mnesia:table(?TABLE),
+		     X#?RECORD.app_id==AppId,
 		     X#?RECORD.vsn==Vsn])),
-    [{XSpecId,XVsn,XNum,XRestrictions,XAppSpecs}||{?RECORD,XSpecId,XVsn,XNum,XRestrictions,XAppSpecs}<-Z].
+    [{XAppId,XVsn,XServices}||{?RECORD,XAppId,XVsn,XServices}<-Z].
 
-
-delete(SpecId,Vsn) ->
+delete(Id,Vsn) ->
 
     F = fun() -> 
-		DeploymentSpec=[X||X<-mnesia:read({?TABLE,SpecId}),
-			    X#?RECORD.deployment_spec_id==SpecId,X#?RECORD.vsn==Vsn],
-		case DeploymentSpec of
+		ServiceDef=[X||X<-mnesia:read({?TABLE,Id}),
+			    X#?RECORD.app_id==Id,X#?RECORD.vsn==Vsn],
+		case ServiceDef of
 		    []->
 			mnesia:abort(?TABLE);
 		    [S1]->

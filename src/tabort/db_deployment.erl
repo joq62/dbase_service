@@ -11,20 +11,22 @@
 
 % Start Special
 
+status(Status)->
+    Z=do(qlc:q([X || X <- mnesia:table(?TABLE),
+		     X#?RECORD.status==Status])),
+    [{DeplId,SpecId,Vsn,Date,Time,HostId,VmId,SdList,XStatus}||{?RECORD,DeplId,SpecId,Vsn,Date,Time,HostId,VmId,_Vm,SdList,XStatus}<-Z].
 
-
-update_status(DepSpecId,DepSpecVsn,NewStartResult)->
+update_status(DeplId,NewStatus)->
     F = fun() -> 
-		Deployment=[X||X<-mnesia:read({?TABLE,DepSpecId}),
-			       X#?RECORD.deployment_spec_id==DepSpecId,
-			       X#?RECORD.deployment_spec_vsn==DepSpecVsn],
+		Deployment=[X||X<-mnesia:read({?TABLE,DeplId}),
+			       X#?RECORD.deployment_id==DeplId],
 		case Deployment of
 		    []->
 			io:format("CurrentRecord = ~p~n",[{?MODULE,?LINE,[]}]),
 			mnesia:abort(?TABLE);
 		    [CurrentRecord]->
 		%	io:format("CurrentRecord = ~p~n",[{?MODULE,?LINE,CurrentRecord}]),
-			NewRecord=CurrentRecord#?RECORD{start_result=NewStartResult},
+			NewRecord=CurrentRecord#?RECORD{status=NewStatus},
 		%	io:format("NewRecord = ~p~n",[{?MODULE,?LINE,NewRecord}]),
 			mnesia:write(NewRecord)
 		end
@@ -43,15 +45,20 @@ create_table(NodeList)->
 				 {disc_copies,NodeList}]),
     mnesia:wait_for_tables([?TABLE], 20000).
 
-create({?MODULE,DepSpecId,DepSpecVsn,Date,Time,StartResult}) ->
-    create(DepSpecId,DepSpecVsn,Date,Time,StartResult).
-create(DepSpecId,DepSpecVsn,Date,Time,StartResult) ->
-    Record=#?RECORD{
-		    deployment_spec_id=DepSpecId,
-		    deployment_spec_vsn=DepSpecVsn,
+create({?MODULE,DeplId,SpecId,Vsn,Date,Time,HostId,VmId,SdList,Status}) ->
+    create(DeplId,SpecId,Vsn,Date,Time,HostId,VmId,SdList,Status).
+create(DeplId,SpecId,Vsn,Date,Time,HostId,VmId,SdList,Status) ->
+    Vm=list_to_atom(VmId++"@"++HostId),
+    Record=#?RECORD{deployment_id=DeplId,
+		    deployment_spec_id=SpecId,
+		    deployment_spec_vsn=Vsn,
 		    date=Date,
 		    time=Time,
-		    start_result=StartResult
+		    host_id=HostId,
+		    vm_id=VmId,
+		    vm=Vm,
+		    sd_list=SdList,
+		    status=Status
 		   },
 
     F = fun() -> mnesia:write(Record) end,
@@ -59,20 +66,19 @@ create(DepSpecId,DepSpecVsn,Date,Time,StartResult) ->
 
 read_all() ->
     Z=do(qlc:q([X || X <- mnesia:table(?TABLE)])),
-    [{DepSpecId,DepSpecVsn,Date,Time,StartResult}||{?RECORD,DepSpecId,DepSpecVsn,Date,Time,StartResult}<-Z].
+    [{DeplId,SpecId,Vsn,Date,Time,HostId,VmId,SdList,Status}||{?RECORD,DeplId,SpecId,Vsn,Date,Time,HostId,VmId,_Vm,SdList,Status}<-Z].
 
 
-read(DepSpecId,DepSpecVsn)->
+read(DeplId)->
     Z=do(qlc:q([X || X <- mnesia:table(?TABLE),
-		     X#?RECORD.deployment_spec_id==DepSpecId,
-		     X#?RECORD.deployment_spec_vsn==DepSpecVsn])),
-    [{ZDepSpecId,ZDepSpecVsn,Date,Time,XStartResult}||{?RECORD,ZDepSpecId,ZDepSpecVsn,Date,Time,XStartResult}<-Z].
+		   X#?RECORD.deployment_id==DeplId])),
+    [Y]=[{XDeplId,SpecId,Vsn,Date,Time,HostId,VmId,SdList,Status}||{?RECORD,XDeplId,SpecId,Vsn,Date,Time,HostId,VmId,_Vm,SdList,Status}<-Z],
+    Y.
 
-delete(DepSpecId,DepSpecVsn) ->
+delete(DeplId) ->
     F = fun() -> 
-		Deployment=[X||X<-mnesia:read({?TABLE,DepSpecId}),
-			       X#?RECORD.deployment_spec_id==DepSpecId,
-			       X#?RECORD.deployment_spec_vsn==DepSpecVsn],
+		Deployment=[X||X<-mnesia:read({?TABLE,DeplId}),
+			       X#?RECORD.deployment_id==DeplId],
 		case Deployment of
 		    []->
 			mnesia:abort(?TABLE);
